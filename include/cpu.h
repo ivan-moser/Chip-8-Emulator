@@ -2,6 +2,7 @@
 #define CPU_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "cpu.h"
 
 typedef uint8_t operator_t;

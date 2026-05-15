@@ -1,6 +1,8 @@
 #include "..\include\cpu.h"
 #include "..\include\cpu.h"
 
+#define PC_NEXT vm->PC+=2
+
 
 uint16_t fetch(chip8* vm){
     uint8_t raw_code = (vm->memory[vm->PC] << 8) | vm->memory[vm->PC + 1];
@@ -21,15 +23,23 @@ void execute(instruction_t instruction, chip8* vm){
 
     switch(opcode){
         case 0:
-            if((value & 0x00f) == 1110){
-                vm->PC+=2;
-            } else if ((value & 0x00f) == 0000) {
+            
+            // broo
+            // yooo
+            if((value & 0x00f) == 1110){ //          RETURN
+                PC_NEXT;
+            } else if ((value & 0x00f) == 0000) { // CLEAN
                 // TODO: Clearing the screen  <=============================================
+                PC_NEXT;
             } else {
-                
+                // INVALID ARGUMENT ERROR!
+                vm->running=false;
+                return;
             }                   
             break;
-        case 1:
+
+        case 1:                 //                    JUMP 
+            vm->PC = value;
             break;
         case 2:
             break;
@@ -65,5 +75,5 @@ void execute(instruction_t instruction, chip8* vm){
 void cycle(chip8* vm){
     uint16_t operation = fetch(vm->memory);
     instruction_t instruction = decode(operation);
-    execute(instruction);
+    execute(instruction, &vm);
 }
