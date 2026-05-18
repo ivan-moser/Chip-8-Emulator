@@ -1,5 +1,5 @@
 #include "../include/cpu.h"
-#include "../include/cpu.h"
+#include "stdio.h"
 
 #define PC_NEXT vm->PC+=2
 #define PC_NEXT_X2 vm->PC+=4
@@ -17,7 +17,7 @@ uint64_t get_time_ms() {
 }
 
 uint16_t fetch(chip8* vm){
-    uint8_t raw_code = (vm->memory[vm->PC] << 8) | vm->memory[vm->PC + 1];
+    uint16_t raw_code = (vm->memory[vm->PC] << 8) | vm->memory[vm->PC + 1];
     return raw_code;
 }
 
@@ -33,12 +33,12 @@ void execute(instruction_t instruction, chip8* vm){
     operator_t opcode = instruction.operation;
     value_t value = instruction.value;
 
-    uint8_t x = (x) >> 8;
-    uint8_t y = (y) >> 4;
+    uint8_t x = (value & 0xf00) >> 8;
+    uint8_t y = (value & 0x0f0) >> 4;
 
     uint8_t N = value & 0x00f;
-    uint8_t NN = value & 0x0ff;
-    uint8_t NNN = value & 0xfff;
+    uint16_t NN = value & 0x0ff;
+    uint16_t NNN = value & 0xfff;
 
     switch(opcode){
 
@@ -49,6 +49,12 @@ void execute(instruction_t instruction, chip8* vm){
             } else if ((N) == 0) {
                 // TODO: Clearing the screen
                 PC_NEXT;
+ //=============== TESTING ========================+
+            }else if(NNN == 0xfff){              //|
+                vm->running = false;             //|
+                printf("PROGRAM ENDED BY USER"); //|
+                break;                           //|
+  //===============================================+
             } else {
                 // INVALID ARGUMENT ERROR!
                 vm->running=false;
@@ -256,8 +262,10 @@ void execute(instruction_t instruction, chip8* vm){
     }
 }
 
-void cycle(chip8* vm){
-    uint16_t operation = fetch(vm->memory);
+uint16_t cycle(chip8* vm){
+    uint16_t operation = fetch(vm);
     instruction_t instruction = decode(operation);
-    execute(instruction, &vm);
+    execute(instruction, vm);
+
+    return operation;
 }

@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
-#include "cpu.h"
+
 
 typedef uint8_t operator_t;
 typedef uint16_t value_t; 
@@ -39,7 +39,7 @@ uint64_t get_time_ms();
 // fetch the program to find the raw instructions (2 bytes skip)
 // Use the program counter (PC)
 // returns: opcode;
-uint16_t fetch();
+uint16_t fetch(chip8* vm);
 
 // Takes each opcode to read it, check 
 // the operation / value and registers
@@ -49,8 +49,8 @@ instruction_t decode(uint16_t opcode);
 // Takes each instruction, execute the 
 // it and update the PC / check if
 // the program have to end 
-void execute(instruction);
+void execute(instruction_t instruction, chip8* vm);
 
-void cycle();
+uint16_t cycle(chip8* vm);
 
 #endif
