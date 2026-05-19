@@ -1,4 +1,7 @@
 #include "../include/load.h"
+#include "../include/cpu.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #define ROM_PATH "ROM/rom.ch8"
 

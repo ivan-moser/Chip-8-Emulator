@@ -12,13 +12,17 @@
 
 
 typedef uint8_t operator_t;
-typedef uint16_t value_t; 
+typedef uint16_t value_t;
 
 typedef struct {
     uint8_t memory[4095];
     uint8_t V[16];
+    uint16_t stack[16];
     uint8_t keypad[16];  // 1-F  values of 0/1 
 
+    uint8_t display[64 * 32];
+
+    uint8_t sp;
     uint16_t I;
     uint16_t PC;
 

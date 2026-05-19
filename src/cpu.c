@@ -4,6 +4,7 @@
 #define PC_NEXT vm->PC+=2
 #define PC_NEXT_X2 vm->PC+=4
 #define RAM_SIZE (sizeof(vm->memory) / sizeof(uint8_t))
+#define DISPLAY_SIZE 64 * 32
 
 
 uint64_t get_time_ms() {
@@ -41,19 +42,27 @@ void execute(instruction_t instruction, chip8* vm){
 
     switch(opcode){
 
-        // Return / Clean screen
         case 0:
+            // Return from a subroutine
             if((N) == 0xE){
-                PC_NEXT;
+                vm->sp--;
+                vm->PC = vm->stack[vm->sp];
+                break;
+            // Clean screen
             } else if ((N) == 0) {
-                // TODO: Clearing the screen
+                for(uint16_t i = 0; i < DISPLAY_SIZE; i++){
+                    vm->display[i] = 0;
+                }
                 PC_NEXT;
- //=============== TESTING ========================+
+                break;
+
+ //=============== DEBUGGING ======================+
             }else if(NNN == 0xfff){              //|
                 vm->running = false;             //|
-                printf("PROGRAM ENDED BY USER"); //|
+
                 break;                           //|
   //===============================================+
+
             } else {
                 // INVALID ARGUMENT ERROR!
                 vm->running=false;
@@ -65,9 +74,14 @@ void execute(instruction_t instruction, chip8* vm){
         case 1:
             vm->PC = value;
             break;
-        // TODO: Call a subroutine 
+
+        // Call a subroutine 
         case 2:
+            vm->stack[vm->sp] = vm->PC + 0x2;
+            vm->sp++;
+            vm->PC = NNN; 
             break;
+
         // If not NN in vx
         case 3:
             if((NN) == vm->V[x]){
@@ -247,10 +261,17 @@ void execute(instruction_t instruction, chip8* vm){
                     vm->I += vm->V[x];
                     PC_NEXT;
                     break;
-                // TODO: I = Sprite adress  corrisponding to vx
+                // I = Sprite adress  corrisponding to vx
                 case 0x29:
+                    vm->I = 0x50 + (x * 5);
+                    PC_NEXT;
                     break;
+                // Assign to the adressies I, I+1, I+2, Centinaia, decine e unità contenute in vx(0-255)
                 case 0x33:
+                    vm->memory[vm->I] = x / 100;
+                    vm->memory[vm->I + 1] = (x / 10) % 10;
+                    vm->memory[vm->I + 2] = x % 10;
+                    PC_NEXT;
                     break;
                 case 0x55:
                     break;

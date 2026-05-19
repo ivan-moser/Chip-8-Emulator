@@ -1,6 +1,8 @@
+#ifndef LOAD_H
+#define LOAD_H
+
 #include "cpu.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 void loading(chip8* vm);
 
+#endif

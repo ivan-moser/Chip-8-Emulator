@@ -3,12 +3,9 @@
 - error handling
 
 - execute:
-    - Clearing screen function
-    - Call a subroutine function
-    - Sprite collision function
-    - I = Sprite adress  corrisponding to vx
-
-- LOADING ROM
+    - DXYN
+    - FX55
+    - FX65
 
 - INPUT HANDLER
 - OUTPUT THE SPRITE
