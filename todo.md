@@ -7,3 +7,8 @@
     - Call a subroutine function
     - Sprite collision function
     - I = Sprite adress  corrisponding to vx
+
+- LOADING ROM
+
+- INPUT HANDLER
+- OUTPUT THE SPRITE

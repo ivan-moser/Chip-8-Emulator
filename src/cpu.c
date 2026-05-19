@@ -6,7 +6,6 @@
 #define RAM_SIZE (sizeof(vm->memory) / sizeof(uint8_t))
 
 
-
 uint64_t get_time_ms() {
     struct timespec ts;
 
