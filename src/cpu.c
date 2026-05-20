@@ -7,15 +7,6 @@
 #define DISPLAY_SIZE 64 * 32
 
 
-uint64_t get_time_ms() {
-    struct timespec ts;
-
-    clock_gettime(CLOCK_MONOTONIC,  &ts);
-
-    return ts.tv_sec * 1000ULL + 
-           ts.tv_nsec / 1000000ULL;
-}
-
 uint16_t fetch(chip8* vm){
     uint16_t raw_code = (vm->memory[vm->PC] << 8) | vm->memory[vm->PC + 1];
     return raw_code;
@@ -37,39 +28,30 @@ void execute(instruction_t instruction, chip8* vm){
     uint8_t y = (value & 0x0f0) >> 4;
 
     uint8_t N = value & 0x00f;
-    uint16_t NN = value & 0x0ff;
+    uint8_t NN = value & 0x0ff;
     uint16_t NNN = value & 0xfff;
 
     switch(opcode){
 
         case 0:
-            // Return from a subroutine
-            if((N) == 0xE){
-                vm->sp--;
-                vm->PC = vm->stack[vm->sp];
-                break;
-            // Clean screen
-            } else if ((N) == 0) {
-                for(uint16_t i = 0; i < DISPLAY_SIZE; i++){
-                    vm->display[i] = 0;
-                }
-                PC_NEXT;
-                break;
 
- //=============== DEBUGGING ======================+
-            }else if(NNN == 0xfff){              //|
-                vm->running = false;             //|
+            switch(value){
+                // Clean screen
+                case 0x0E0:
+                    for(uint16_t i = 0; i < DISPLAY_SIZE; i++){
+                        vm->display[i] = 0;
+                    }
+                    PC_NEXT;
+                    break;
+                // Return from a subroutine
+                case 0x0EE:
 
-                break;                           //|
-  //===============================================+
-
-            } else {
-                // INVALID ARGUMENT ERROR!
-                vm->running=false;
-                return;
-            }                   
+                    vm->sp--;
+                    vm->PC = vm->stack[vm->sp];
+                    break;
+            }
             break;
-        
+
         // Jump 
         case 1:
             vm->PC = value;
@@ -94,18 +76,18 @@ void execute(instruction_t instruction, chip8* vm){
         // If NN in vx
         case 4:
             if((NN) == vm->V[x]){
-                PC_NEXT;
-            } else {
                 PC_NEXT_X2;
+            } else {
+                PC_NEXT;
             }
             break;
 
         // If vx and vy content are different    
         case 5:
             if(vm->V[x] == vm->V[y]){
-                PC_NEXT;
-            } else {
                 PC_NEXT_X2;
+            } else {
+                PC_NEXT;
             }
             break;
 
@@ -146,12 +128,10 @@ void execute(instruction_t instruction, chip8* vm){
             // SUM vx + vy  with vf = 1 on carry
             case 4:
                 uint16_t sum = vm->V[x] + vm->V[y];
-                if(!(sum > 255)){
-                    vm->V[x] += vm->V[y];
-                } else {
-                    vm->V[0xf] = 1;
-                    vm->V[x] = sum & 0xff;
-                }
+                
+                vm->V[0xF] = (sum > 255);
+                vm->V[x] = sum & 0xFF;
+
                 break;
             // SUB vx - vy  with vf = 0 on borrow
             case 5:
@@ -170,7 +150,7 @@ void execute(instruction_t instruction, chip8* vm){
                 break;
             // Left shift
             case 0xE:
-                vm->V[0xf] = (vm->V[y] & 0x8) >> 7;
+                vm->V[0xf] = (vm->V[y] & 0x80) >> 7;
                 vm->V[x] = vm->V[y] << 1;
                 break;
             }
@@ -180,9 +160,9 @@ void execute(instruction_t instruction, chip8* vm){
         // If vx == vy then
         case 9:
             if(vm->V[x] == vm->V[y]){
-                PC_NEXT;
-            } else {
                 PC_NEXT_X2;
+            } else {
+                PC_NEXT;
             }
             break;
         // Set the index register to NNN
@@ -207,35 +187,70 @@ void execute(instruction_t instruction, chip8* vm){
             break;
         // TODO: Sprite collision
         case 0xD:
+            vm->V[0xF] = 0;
+            uint8_t coord_x;
+            uint8_t coord_y;
+
+            for(uint8_t row = 0; row < N; row++){
+                uint8_t spriteByte = vm->memory[vm->I + row];
+                for(uint8_t col = 0; col < 8; col++){
+                    if(spriteByte & (0x80 >> col)){
+                        coord_x = vm->V[x] + col;
+                        coord_y = vm->V[y] + row;
+
+                        coord_x %= 64;
+                        coord_y %= 32;
+
+                        uint16_t index = coord_x + (coord_y * 64);
+
+                        if(vm->display[index]){
+                            vm->V[0xF] = 1;
+                        }
+
+                        vm->display[index] ^= 1;
+                    }
+                }
+            }
+            PC_NEXT;
             break;
         // KEY PRESS HANDLER
         case 0xE:
-            switch (N) {
-                // If the key identified by vx
-                case 0xE:
+
+            switch(NN) {
+                // skip next if key in VX is pressed
+                case 0x9E:
+
                     if(vm->keypad[vm->V[x]]) {
                         PC_NEXT_X2;
                     } else {
                         PC_NEXT;
                     }
+
                     break;
-                // If NOT the key identified by vx
-                case 0x1:
+
+                // skip next if key in VX is NOT pressed
+                case 0xA1:
+
                     if(!vm->keypad[vm->V[x]]) {
                         PC_NEXT_X2;
                     } else {
                         PC_NEXT;
                     }
+
+                    break;
             }
+
             break;
         // Ambiental operations
         case 0xF:
             switch (NN){
+
                 // Get the timer in vx
                 case 0x07:
                     vm->V[x] = vm->delay_timer;
                     PC_NEXT;
                     break;
+
                 // WAIT till a key is pressed
                 case 0x0A:
                     for(uint16_t i = 0; i < 16; i++){
@@ -243,43 +258,69 @@ void execute(instruction_t instruction, chip8* vm){
 
                             vm->V[x] = i;
                             PC_NEXT;
-                            break;
+                            return;                        
                         }
                     }
+                    
+                    return;
+
                 // Set timer from vx
                 case 0x15:
                     vm->delay_timer = vm->V[x];
                     PC_NEXT;
                     break;
+
                 // Set sound timer from vx
                 case 0x18:
                     vm->sound_timer = vm->V[x];
                     PC_NEXT;
                     break;
+
                 // Add vx on i
                 case 0x1E:
                     vm->I += vm->V[x];
                     PC_NEXT;
                     break;
+
                 // I = Sprite adress  corrisponding to vx
                 case 0x29:
-                    vm->I = 0x50 + (x * 5);
+                    vm->I = 0x50 + (vm->V[x] * 5);
                     PC_NEXT;
                     break;
+
                 // Assign to the adressies I, I+1, I+2, Centinaia, decine e unità contenute in vx(0-255)
                 case 0x33:
-                    vm->memory[vm->I] = x / 100;
-                    vm->memory[vm->I + 1] = (x / 10) % 10;
-                    vm->memory[vm->I + 2] = x % 10;
+                    vm->memory[vm->I] = vm->V[x] / 100;
+                    vm->memory[vm->I + 1] = (vm->V[x] / 10) % 10;
+                    vm->memory[vm->I + 2] = vm->V[x] % 10;
                     PC_NEXT;
                     break;
+
+                // Save from v0 to vx into memory starting from I
                 case 0x55:
+                    
+                    for(uint16_t i = 0; i <= x; i++){
+                        vm->memory[vm->I + i] = vm->V[i];
+                    }
+
+                    PC_NEXT;
                     break;
+
+                // Load I...X  to   v0...vx
                 case 0x65:
+
+                    for(uint16_t i = 0; i <= x; i++){
+                        vm->V[i] = vm->memory[vm->I + i];
+                    }
+                    PC_NEXT;
                     break;
             }
             break;
-    }
+
+        default:
+            printf("Unknown opcode\n");
+            vm->running = false;
+        }
 }
 
 uint16_t cycle(chip8* vm){

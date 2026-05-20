@@ -18,11 +18,16 @@ void loading(chip8* vm){
     uint64_t size = ftell(rom);
     rewind(rom);
 
-    if(size > sizeof(vm->memory)){
+    if(size > sizeof(vm->memory) - 0x200){
         vm->running = false;
         printf("\nFATAL ERROR - ROM FILE IS BIGGER THAN 4096 bytes!\n");
         exit(-1);
     }
 
-    fread(vm->memory + 0x200, 1, size, rom);
+    size_t bytes_read = fread(vm->memory + 0x200, 1, size, rom);
+
+    fclose(rom);
+
+    printf("ROM SIZE: %lu\n", size);
+    printf("BYTES READ: %lu\n", bytes_read);
 }

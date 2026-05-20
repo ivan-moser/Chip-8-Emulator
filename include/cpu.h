@@ -1,8 +1,6 @@
 #ifndef CPU_H
 #define CPU_H
 
-#define _POSIX_C_SOURCE 199309L
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -28,6 +26,9 @@ typedef struct {
 
     uint8_t delay_timer;
     uint8_t sound_timer;
+
+    bool waiting_for_key;
+    uint8_t waiting_register;
 
     bool running;
 } chip8;
