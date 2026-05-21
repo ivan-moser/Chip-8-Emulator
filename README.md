@@ -2,16 +2,12 @@
 
 A modern CHIP-8 emulator written in C using SDL2, developed as a low-level programming and computer architecture study project.
 
-![Language](https://img.shields.io/badge/language-C-blue)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
-![Graphics](https://img.shields.io/badge/graphics-SDL2-green)
-
 ---
 
 # Preview
 
-<p align="center">
-  <img src="assets/preview.png" width="600">
+<p align="left">
+  <img src="assets/image.png" width="600">
 </p>
 
 ---
