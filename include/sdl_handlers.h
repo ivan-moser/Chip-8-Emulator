@@ -4,6 +4,7 @@
 #include "cpu.h"
 #include <stdint.h>
 
+int map_key(SDL_Keycode key);
 void handle_input(chip8* vm);
 void update_timers(chip8* vm);
 void render(chip8* vm, SDL_Renderer* renderer);

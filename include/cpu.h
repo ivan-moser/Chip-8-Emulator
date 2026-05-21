@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
+#include <SDL2/SDL.h>
 
 
 typedef uint8_t operator_t;

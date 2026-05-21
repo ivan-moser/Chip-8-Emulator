@@ -4,80 +4,65 @@
 #define WINDOW_HEIGTH 32
 #define SCALE 10
 
+int map_key(SDL_Keycode key){
+    switch (key)
+    {
+        case SDLK_1: return 0x1;
+        case SDLK_2: return 0x2;
+        case SDLK_3: return 0x3;
+        case SDLK_4: return 0xC;
+
+        case SDLK_q: return 0x4;
+        case SDLK_w: return 0x5;
+        case SDLK_e: return 0x6;
+        case SDLK_r: return 0xD;
+
+        case SDLK_a: return 0x7;
+        case SDLK_s: return 0x8;
+        case SDLK_d: return 0x9;
+        case SDLK_f: return 0xE;
+
+        case SDLK_z: return 0xA;
+        case SDLK_x: return 0x0;
+        case SDLK_c: return 0xB;
+        case SDLK_v: return 0xF;
+
+        default:
+            return -1;
+    }
+}
+
 void handle_input(chip8* vm){
     SDL_Event event;
 
-    while(SDL_PollEvent(&event)) {
-        if(event.type == SDL_QUIT){
-            vm->running = false;
-        }
+while (SDL_PollEvent(&event))
+{
+    if (event.type == SDL_QUIT){
+        vm->running = false;
+    }
 
-        if(event.type == SDL_KEYDOWN) {
+    if (event.type == SDL_KEYDOWN){
+        int chip8_key = map_key(event.key.keysym.sym);
 
-            uint8_t key = 0xFF;
+        if(chip8_key != -1){
+            vm->keypad[chip8_key] = 1;
 
-            switch(event.key.keysym.sym) {
+            printf("CHIP-8 KEY: 0x%X\n", chip8_key);
 
-                case SDLK_1: key = 0x1; break;
-                case SDLK_2: key = 0x2; break;
-                case SDLK_3: key = 0x3; break;
-                case SDLK_4: key = 0xC; break;
-
-                case SDLK_q: key = 0x4; break;
-                case SDLK_w: key = 0x5; break;
-                case SDLK_e: key = 0x6; break;
-                case SDLK_r: key = 0xD; break;
-
-                case SDLK_a: key = 0x7; break;
-                case SDLK_s: key = 0x8; break;
-                case SDLK_d: key = 0x9; break;
-                case SDLK_f: key = 0xE; break;
-
-                case SDLK_z: key = 0xA; break;
-                case SDLK_x: key = 0x0; break;
-                case SDLK_c: key = 0xB; break;
-                case SDLK_v: key = 0xF; break;
-            }
-
-            if(key != 0xFF){
-
-                vm->keypad[key] = 1;
-
-                // FX0A support
-                if(vm->waiting_for_key){
-
-                    vm->V[vm->waiting_register] = key;
-
-                    vm->waiting_for_key = false;
-
-                    vm->PC += 2;
-                }
+            if (vm->waiting_for_key)
+            {
+                vm->V[vm->waiting_register] = chip8_key;
+                vm->waiting_for_key = false;
             }
         }
+    }
 
-        if(event.type == SDL_KEYUP) {
+            if (event.type == SDL_KEYUP){
+            int chip8_key = map_key(event.key.keysym.sym);
 
-            switch(event.key.keysym.sym) {
-
-                case SDLK_1: vm->keypad[0x1] = 0; break;
-                case SDLK_2: vm->keypad[0x2] = 0; break;
-                case SDLK_3: vm->keypad[0x3] = 0; break;
-                case SDLK_4: vm->keypad[0xC] = 0; break;
-
-                case SDLK_q: vm->keypad[0x4] = 0; break;
-                case SDLK_w: vm->keypad[0x5] = 0; break;
-                case SDLK_e: vm->keypad[0x6] = 0; break;
-                case SDLK_r: vm->keypad[0xD] = 0; break;
-
-                case SDLK_a: vm->keypad[0x7] = 0; break;
-                case SDLK_s: vm->keypad[0x8] = 0; break;
-                case SDLK_d: vm->keypad[0x9] = 0; break;
-                case SDLK_f: vm->keypad[0xE] = 0; break;
-
-                case SDLK_z: vm->keypad[0xA] = 0; break;
-                case SDLK_x: vm->keypad[0x0] = 0; break;
-                case SDLK_c: vm->keypad[0xB] = 0; break;
-                case SDLK_v: vm->keypad[0xF] = 0; break;
+            if(chip8_key != -1)
+            {
+                vm->keypad[chip8_key] = 0;
             }
         }
     }

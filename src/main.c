@@ -15,7 +15,10 @@ int main(void){
 
     vm.running = true;
     vm.PC = 0x200;
-    vm.waiting_for_key = true;
+
+    vm.waiting_for_key = false;
+    vm.waiting_register = 0;
+    memset(vm.keypad, 0, sizeof(vm.keypad));
 
     load_fonts(&vm);
     loading(&vm);
@@ -27,32 +30,14 @@ int main(void){
     while(vm.running){
 
         handle_input(&vm);
-        uint16_t opcode = cycle(&vm);
+        if(!vm.waiting_for_key){
+            uint16_t opcode = cycle(&vm);
+        }
         update_timers(&vm);
         render(&vm, renderer);
-        
-        printf("PC: 0x%04x OPCODE: %04X\n", vm.PC, opcode);
+        SDL_Delay(1);
+        printf("OPCODE: [\033[0;32m%04x\033[0m]\n", vm.memory[vm.PC]);
     }
-
-//==================== DEBUG ===================================================
-    printf("\nREGISTERS: ");
-    for(int i = 0; i < 16; i++){
-        if(vm.V[i] != 0){
-            printf("[\033[0;32m%04x\033[0m]", vm.V[i]);
-        } else {
-            printf("[%d]", vm.V[i]);
-        }
-
-    }
-    printf("\nMEMORY: \n");
-    for(int i = 0x50; i < 100; i++){
-        if(vm.memory[i] != 0){
-            printf("[&0x%04x> \033[0;32m%04x\033[0m]\n", i, vm.memory[i]);
-        }else {
-            printf("[&0x%04x> [%x]\n", i , vm.memory[i]);
-        }
-    }
-//==============================================================================
     
     return 0;
 }

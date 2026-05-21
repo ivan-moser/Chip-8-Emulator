@@ -76,9 +76,9 @@ void execute(instruction_t instruction, chip8* vm){
         // If NN in vx
         case 4:
             if((NN) == vm->V[x]){
-                PC_NEXT_X2;
-            } else {
                 PC_NEXT;
+            } else {
+                PC_NEXT_X2;
             }
             break;
 
@@ -116,43 +116,88 @@ void execute(instruction_t instruction, chip8* vm){
             // BITWISE OR
             case 1:
                 vm->V[x] = vm->V[x] | vm->V[y];
+                vm->V[0xF] = 0;
                 break;
             // BITWISE AND
             case 2:
                 vm->V[x] = vm->V[x] & vm->V[y];
+                vm->V[0xF] = 0;
                 break;
             // BITWISE XOR
             case 3:
                 vm->V[x] = vm->V[x] ^ vm->V[y];
+                vm->V[0xF] = 0;
                 break;
             // SUM vx + vy  with vf = 1 on carry
             case 4:
-                uint16_t sum = vm->V[x] + vm->V[y];
+            {   uint8_t vx = vm->V[x];
+                uint8_t vy = vm->V[y];
+
+                uint16_t sum = vx + vy;
+
+                uint8_t result = sum & 0xFF;
+                uint8_t vf = (sum > 0xFF);
                 
-                vm->V[0xF] = (sum > 255);
-                vm->V[x] = sum & 0xFF;
+                vm->V[x] = result;
+                vm->V[0xF] = vf;
 
                 break;
+            }
             // SUB vx - vy  with vf = 0 on borrow
             case 5:
-                vm->V[0xf] = (vm->V[x] >= vm->V[y]) ? 1 : 0;
-                vm->V[x] -= vm->V[y];
-                break;;
-            // Right shift
-            case 6:
-                vm->V[0xf] = vm->V[y] & 0x1;
-                vm->V[x] = vm->V[y] >> 1; 
+            {
+                uint8_t vx = vm->V[x];
+                uint8_t vy = vm->V[y];
+
+                uint16_t sub = vx - vy;
+
+                uint8_t result = sub & 0xFF;
+                uint8_t vf = (vx >= vy);
+                
+                vm->V[x] = result;
+                vm->V[0xf] = vf;
                 break;
+            }
+            // Right shift
+            case 0x6:
+            {
+                uint8_t vy = vm->V[y];
+
+                uint8_t result = vy >> 1;
+                uint8_t vf = vy & 0x1;
+
+                vm->V[x] = result;
+                vm->V[0xF] = vf;
+
+                break;
+            }
             // vy - vx  with borrow on vf
             case 7:
-                vm->V[0xf] = (vm->V[y] >= vm->V[x]) ? 1 : 0;
-                vm->V[x] = vm->V[y] - vm->V[x];
+            {
+                uint8_t vx = vm->V[x];
+                uint8_t vy = vm->V[y];
+
+                uint16_t sub = vy - vx;
+
+                uint8_t result = sub & 0xFF;
+                uint8_t vf = (vy >= vx);
+
+                vm->V[x] = result;
+                vm->V[0xF] = vf;
                 break;
+            }
             // Left shift
             case 0xE:
-                vm->V[0xf] = (vm->V[y] & 0x80) >> 7;
-                vm->V[x] = vm->V[y] << 1;
+            {
+                uint8_t vy = vm->V[y];
+
+                uint8_t result = vy << 1;
+                uint8_t vf = (vy & 0x80) >> 7;
+
+                vm->V[x] = result;
+                vm->V[0xF] = vf;
                 break;
+            }
             }
             PC_NEXT;
             break;
@@ -160,9 +205,9 @@ void execute(instruction_t instruction, chip8* vm){
         // If vx == vy then
         case 9:
             if(vm->V[x] == vm->V[y]){
-                PC_NEXT_X2;
-            } else {
                 PC_NEXT;
+            } else {
+                PC_NEXT_X2;
             }
             break;
         // Set the index register to NNN
@@ -187,23 +232,31 @@ void execute(instruction_t instruction, chip8* vm){
             break;
         // TODO: Sprite collision
         case 0xD:
+{
             vm->V[0xF] = 0;
-            uint8_t coord_x;
-            uint8_t coord_y;
 
-            for(uint8_t row = 0; row < N; row++){
+            uint8_t start_x = vm->V[x] % 64;
+            uint8_t start_y = vm->V[y] % 32;
+
+            for(uint8_t row = 0; row < N; row++)
+            {
                 uint8_t spriteByte = vm->memory[vm->I + row];
-                for(uint8_t col = 0; col < 8; col++){
-                    if(spriteByte & (0x80 >> col)){
-                        coord_x = vm->V[x] + col;
-                        coord_y = vm->V[y] + row;
 
-                        coord_x %= 64;
-                        coord_y %= 32;
+                for(uint8_t col = 0; col < 8; col++)
+                {
+                    if(spriteByte & (0x80 >> col))
+                    {
+                        uint8_t coord_x = start_x + col;
+                        uint8_t coord_y = start_y + row;
+
+                        // CLIPPING
+                        if(coord_x >= 64 || coord_y >= 32)
+                            continue;
 
                         uint16_t index = coord_x + (coord_y * 64);
 
-                        if(vm->display[index]){
+                        if(vm->display[index])
+                        {
                             vm->V[0xF] = 1;
                         }
 
@@ -211,8 +264,10 @@ void execute(instruction_t instruction, chip8* vm){
                     }
                 }
             }
+
             PC_NEXT;
             break;
+        }
         // KEY PRESS HANDLER
         case 0xE:
 
@@ -253,16 +308,9 @@ void execute(instruction_t instruction, chip8* vm){
 
                 // WAIT till a key is pressed
                 case 0x0A:
-                    for(uint16_t i = 0; i < 16; i++){
-                        if(vm->keypad[i]){
-
-                            vm->V[x] = i;
-                            PC_NEXT;
-                            return;                        
-                        }
-                    }
-                    
-                    return;
+                    vm->waiting_for_key = true;
+                    vm->waiting_register = x;
+                    break;
 
                 // Set timer from vx
                 case 0x15:
@@ -302,6 +350,7 @@ void execute(instruction_t instruction, chip8* vm){
                     for(uint16_t i = 0; i <= x; i++){
                         vm->memory[vm->I + i] = vm->V[i];
                     }
+                    vm->I += x + 1;
 
                     PC_NEXT;
                     break;
@@ -312,6 +361,8 @@ void execute(instruction_t instruction, chip8* vm){
                     for(uint16_t i = 0; i <= x; i++){
                         vm->V[i] = vm->memory[vm->I + i];
                     }
+                    vm->I += x + 1;
+                    
                     PC_NEXT;
                     break;
             }

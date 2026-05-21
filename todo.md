@@ -1,11 +1,4 @@
 *TODO LIST:*
 
-- error handling
+- Error because the machine wont wait the key pressed
 
-- INPUT HANDLER
-- OUTPUT THE SPRITE
-
-
-1111
-1001
-1111
